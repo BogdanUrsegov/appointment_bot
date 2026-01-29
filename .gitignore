@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs and databases
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables and secrets
+.env
+.env.local
+config.py  # если содержит токены/пароли (лучше вынести в .env!)
+secrets/
+credentials.json  # если не используется публично
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Local config overrides
+config_override.py
+local_settings.py
