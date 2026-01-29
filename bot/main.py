@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 from aiohttp import web
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from asyncpg import create_pool
