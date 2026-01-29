@@ -4,16 +4,10 @@ from pathlib import Path
 from aiohttp import web
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from asyncpg import create_pool
-from dotenv import load_dotenv
 
 # Импорты проекта
 from .create_bot import bot, dp, ADMIN_ID
 from .handlers import router
-
-# Загрузка .env (для конфигурации вебхука)
-env_path = Path(__file__).parent.parent / ".env"
-
-load_dotenv(dotenv_path=env_path)
 
 WEBHOOK_PATH = os.getenv("WEBHOOK_PATH", "/webhook")
 BASE_URL = os.getenv("WEBHOOK_BASE_URL")
@@ -22,7 +16,6 @@ PORT = int(os.getenv("WEBHOOK_PORT", 8000))
 
 if not BASE_URL:
     raise ValueError("WEBHOOK_BASE_URL is required")
-
 
 async def init_postgres(dp) -> None:
     """Инициализирует пул соединений к PostgreSQL и сохраняет его в диспетчер."""
