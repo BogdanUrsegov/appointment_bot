@@ -4,3 +4,4 @@ aiohttp==3.9.5
 asyncpg==0.31.0          # ← основной драйвер
 sqlalchemy[asyncio]==2.0.30  # ← если используешь ORM
 redis==7.1.0
+asyncpg
