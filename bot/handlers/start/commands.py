@@ -3,6 +3,7 @@ from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from bot.database.models import User
+from bot.keyboards.start import start_menu
 
 
 router = Router()
@@ -21,6 +22,8 @@ async def cmd_start(message: types.Message, session: AsyncSession):
         new_user = User(telegram_id=telegram_id)
         session.add(new_user)
         await session.commit()
-        await message.answer("👋 Добро пожаловать! Вы успешно зарегистрированы.")
-    else:
-        await message.answer("✅ С возвращением!")
+    await message.answer(
+        "👋 <b>Здравствуйте!</b>\n\n"
+        "<i>Запишитесь к врачу в удобное для вас время!</i>",
+        reply_markup=start_menu()
+        )
