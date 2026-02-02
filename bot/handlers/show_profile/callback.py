@@ -1,4 +1,5 @@
 # bot/handlers/profile/handlers.py
+from datetime import date
 import traceback
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
@@ -32,11 +33,15 @@ async def handle_my_profile(callback: CallbackQuery, session: AsyncSession):
     check_result = check_user_profile_completion(user)
 
     if check_result['is_complete']:
+        today = date.today()
+        age = today.year - user.birth_date.year - ((today.month, today.day) < (user.birth_date.month, user.birth_date.day))
+
         message_text = (
-            "<b>Ваши данные:</b>\n\n"
-            f"{user.last_name} {user.first_name} {user.patronymic}"
-            f"Номер телефона: {user.phone}"
-            )
+            "<b>🪪 Ваши данные:</b>\n\n"
+            f"👤 <b>ФИО:</b> {user.last_name} {user.first_name} {user.patronymic}\n"
+            f"📱 <b>Телефон:</b> {user.phone}\n"
+            f"🎂 <b>Возраст:</b> {age} лет"
+        )
     else:
         message_text = "<b><i>Вы ещё не заполнили свои данные</i></b>"
 

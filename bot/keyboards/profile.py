@@ -6,7 +6,7 @@ def profile_menu(check_result):
     if check_result['is_complete']:
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text="📝 Заполнить заново", callback_data="add_data_again")]
+                [InlineKeyboardButton(text="📝 Заполнить заново", callback_data="add_data")]
             ]
         )
     else:

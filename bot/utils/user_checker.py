@@ -18,7 +18,7 @@ def check_user_profile_completion(user: User) -> Dict[str, bool]:
     important_fields = [
         ('first_name', 'Имя', bool(user.first_name)),
         ('last_name', 'Фамилия', bool(user.last_name)),
-        ('age', 'Возраст', bool(user.age)),
+        ('birth_date', 'Дата Рождения', bool(user.birth_date)),
         ('phone', 'Телефон', bool(user.phone)),
     ]
     
@@ -108,8 +108,7 @@ def get_profile_edit_keyboard(check_result: Dict) -> Dict[str, str]:
         ('first_name', 'Имя'),
         ('last_name', 'Фамилия'),
         ('patronymic', 'Отчество'),
-        ('phone', 'Телефон'),
-        ('email', 'Email')
+        ('phone', 'Телефон')
     ]
     
     for field_key, field_name in all_fields:

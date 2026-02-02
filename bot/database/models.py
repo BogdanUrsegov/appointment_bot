@@ -21,9 +21,9 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True)
     first_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    last_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True) 
+    last_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     patronymic: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    age: Mapped[int] = mapped_column(Integer, nullable=True)
+    birth_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)  # ← заменено
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     

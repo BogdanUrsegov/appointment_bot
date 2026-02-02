@@ -21,21 +21,22 @@ router = Router()
 async def start_registration(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_reply_markup(None)
     await callback.answer("Регистрация")
-    await callback.message.answer(
+    sent_message = await callback.message.answer(
         "👤 <b>Регистрация профиля</b>\n\n"
         "Давайте заполним вашу анкету — это займёт меньше минуты!\n\n"
         "👉 Введите <b>имя</b>:", 
         reply_markup=cancel_registration_button
     )
     await state.set_state(UserRegistration.first_name)
+    await state.update_data(sent_message=sent_message.message_id)
 
 @router.callback_query(F.data == "cancel_registration")
-async def cancel_registration(callback: CallbackQuery, state: FSMContext):
+async def cancel_registration_callback(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
         "🛑 <b>Регистрация отменена</b>\n\n"
         "Выберите действие",
-        reply_markup=start_menu
+        reply_markup=start_menu()
     )
     await callback.answer()  # убирает "часики" у пользователя
 
@@ -90,15 +91,10 @@ async def select_day(callback: CallbackQuery, state: FSMContext, session: AsyncS
         await callback.answer("❌ Недопустимая дата", show_alert=True)
         return
 
-    # Сохраняем в БД
-    await session.execute(
-        update(User),
-        {
-            "telegram_id": callback.from_user.id,
-            "birth_date": birth_date
-        }
+    await callback.message.edit_text(
+        f"✅ Вы выбрали дату рождения: <b>{birth_date.strftime('%d.%m.%Y')}</b>.",
+        reply_markup=None
     )
-    await session.commit()
 
     # Переходим к телефону
     await state.update_data(birth_date=birth_date.isoformat())
