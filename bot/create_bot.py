@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio import Redis
@@ -15,7 +15,7 @@ if not all([BOT_TOKEN, REDIS_URL, ADMIN_ID]):
     raise ValueError("Missing required env vars: BOT_TOKEN, REDIS_URL, ADMIN_ID")
 
 # Создаём компоненты
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 redis_client = Redis.from_url(REDIS_URL)
 storage = RedisStorage(redis=redis_client)
 dp = Dispatcher(storage=storage)

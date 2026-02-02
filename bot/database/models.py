@@ -23,8 +23,8 @@ class User(Base):
     first_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True) 
     patronymic: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    age: Mapped[int] = mapped_column(Integer, nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
     appointments: Mapped[List["Appointment"]] = relationship(

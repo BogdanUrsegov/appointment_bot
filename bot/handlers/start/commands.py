@@ -25,5 +25,5 @@ async def cmd_start(message: types.Message, session: AsyncSession):
     await message.answer(
         "👋 <b>Здравствуйте!</b>\n\n"
         "<i>Запишитесь к врачу в удобное для вас время!</i>",
-        reply_markup=start_menu()
+        reply_markup=start_menu
         )
