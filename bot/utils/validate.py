@@ -10,3 +10,14 @@ def validate_age(value: str) -> bool:
 
 def validate_phone(value: str) -> bool:
     return bool(re.fullmatch(r"\+?7\d{10}", re.sub(r"[^\d+]", "", value)))
+
+def validate_time(t: str) -> bool:
+    try:
+        from datetime import datetime
+        datetime.strptime(t, "%H:%M")
+        return True
+    except ValueError:
+        return False
+
+def validate_duration(d: str) -> bool:
+    return d.isdigit() and int(d) > 0

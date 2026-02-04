@@ -1,4 +1,4 @@
-# bot/handlers/profile/handlers.py
+# bot/handlers/show_profile/handlers.py
 from datetime import date
 import traceback
 from aiogram import Router, F
@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from bot.database.models import User
-from bot.keyboards.profile import profile_menu
-from bot.utils.user_checker import get_profile_completion_message, check_user_profile_completion
+from bot.keyboards.edit_data import edit_data_keyboard
+from bot.database.utils.user_checker import get_profile_completion_message, check_user_profile_completion
 
 
 router = Router()
@@ -19,6 +19,7 @@ async def handle_my_profile(callback: CallbackQuery, session: AsyncSession):
     """
     Обработчик для кнопки "Мой профиль".
     """
+    await callback.answer()
     # Получаем пользователя
     result = await session.execute(
         select(User).where(User.telegram_id == callback.from_user.id)
@@ -45,7 +46,7 @@ async def handle_my_profile(callback: CallbackQuery, session: AsyncSession):
     else:
         message_text = "<b><i>Вы ещё не заполнили свои данные</i></b>"
 
-    reply_markup = profile_menu(check_result)
+    reply_markup = edit_data_keyboard(check_result)
 
     # Отправляем или обновляем сообщение
     if callback.message:
@@ -58,6 +59,4 @@ async def handle_my_profile(callback: CallbackQuery, session: AsyncSession):
             message_text,
             reply_markup=reply_markup
         )
-    
-    await callback.answer()
     

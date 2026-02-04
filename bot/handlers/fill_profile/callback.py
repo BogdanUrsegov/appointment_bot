@@ -36,7 +36,7 @@ async def cancel_registration_callback(callback: CallbackQuery, state: FSMContex
     await callback.message.edit_text(
         "🛑 <b>Регистрация отменена</b>\n\n"
         "Выберите действие",
-        reply_markup=start_menu()
+        reply_markup=start_menu
     )
     await callback.answer()  # убирает "часики" у пользователя
 
@@ -79,7 +79,8 @@ async def select_month(callback: CallbackQuery, state: FSMContext):
 
 # Выбор дня + сохранение
 @router.callback_query(F.data.startswith("bd:"), UserRegistration.birth_day)
-async def select_day(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def select_day(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
     day = int(callback.data.split(":")[1])
     data = await state.get_data()
     year = data["birth_year"]
@@ -103,4 +104,3 @@ async def select_day(callback: CallbackQuery, state: FSMContext, session: AsyncS
         reply_markup=phone_keyboard
     )
     await state.set_state(UserRegistration.phone)
-    await callback.answer()

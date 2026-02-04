@@ -26,7 +26,7 @@ async def cancel_registration_message(message: Message, state: FSMContext):
     await message.answer(
         "🛑 <b>Регистрация отменена</b>\n\n"
         "Выберите действие",
-        reply_markup=start_menu()
+        reply_markup=start_menu
     )
 
 
@@ -122,21 +122,24 @@ async def process_phone(message: Message, state: FSMContext, session: AsyncSessi
     birth_date = date.fromisoformat(state_data.get("birth_date"))
     
     await session.execute(
-        update(User),
-        {
-            "telegram_id": telegram_id,
-            "first_name": first_name,
-            "last_name": last_name,
-            "patronymic": patronymic,
-            "birth_date": birth_date,  # передавай как объект datetime.date
-            "phone": phone
-        }
-    )
+            update(User)
+            .where(User.telegram_id == telegram_id)  # ← КЛЮЧЕВОЙ момент!
+            .values(
+                first_name=first_name,
+                last_name=last_name,
+                patronymic=patronymic,
+                birth_date=birth_date,
+                phone=phone
+            )
+        )
     await session.commit()
 
     await message.answer(
-        "✅ <b>Регистрация завершена!</b>\n\n"
-        "Теперь вы можете записаться к врачу.",
+        "✅ <b>Регистрация успешно завершена!</b>",
         reply_markup=ReplyKeyboardRemove()
+    )
+    await message.answer(
+        "Теперь вы можете записаться к врачу",
+        reply_markup=start_menu
     )
     await state.clear()

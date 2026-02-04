@@ -1,36 +1,25 @@
 # bot/utils/slots_finder.py
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, date, time, timedelta
 from typing import List, Optional, Dict
-from sqlalchemy.orm import Session
-from sqlalchemy import extract
-from bot.database.models import Doctor, Appointment, AppointmentStatus
+from bot.database.models import Doctor, Appointment, AppointmentStatus, Specialization
 
 
-def get_free_slots(db: Session, doctor_id: int, target_date: date) -> List[time]:
-    """
-    Находит все свободные 12-минутные слоты у врача на указанную дату.
-    
-    Args:
-        db: Сессия базы данных
-        doctor_id: ID врача
-        target_date: Дата для поиска слотов
-    
-    Returns:
-        List[time]: Список свободных временных слотов
-    """
-    
-    # 1. Получаем данные врача
-    doctor = db.query(Doctor).filter(
-        Doctor.id == doctor_id,
-        Doctor.is_active == True
-    ).first()
+async def get_free_slots(db: AsyncSession, doctor_id: int, target_date: date) -> List[time]:
+    # 1. Получаем врача
+    result = await db.execute(
+        select(Doctor)
+        .where(Doctor.id == doctor_id, Doctor.is_active == True)
+    )
+    doctor = result.scalar_one_or_none()
     
     if not doctor:
         return []
     
-    # 2. Проверяем, работает ли врач в этот день недели
-    day_of_week = target_date.isoweekday()  # 1=понедельник, 7=воскресенье
-    
+    # 2. Проверка рабочего дня
+    day_of_week = target_date.isoweekday()
     working_days = {
         1: doctor.monday,
         2: doctor.tuesday,
@@ -44,7 +33,7 @@ def get_free_slots(db: Session, doctor_id: int, target_date: date) -> List[time]
     if not working_days.get(day_of_week, False):
         return []
     
-    # 3. Генерируем все возможные слоты за рабочий день
+    # 3. Генерация слотов
     all_slots = []
     current_time = datetime.combine(target_date, doctor.work_start_time)
     end_datetime = datetime.combine(target_date, doctor.work_end_time)
@@ -54,26 +43,30 @@ def get_free_slots(db: Session, doctor_id: int, target_date: date) -> List[time]
         current_time += timedelta(minutes=doctor.appointment_duration_minutes)
     
     # 4. Получаем занятые слоты
-    busy_slots_query = db.query(Appointment.appointment_time).filter(
-        Appointment.doctor_id == doctor_id,
-        Appointment.appointment_date == target_date,
-        Appointment.status.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.COMPLETED])
+    result = await db.execute(
+        select(Appointment.appointment_time)
+        .where(
+            Appointment.doctor_id == doctor_id,
+            Appointment.appointment_date == target_date,
+            Appointment.status.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.COMPLETED])
+        )
     )
+    busy_slots = [row[0] for row in result.fetchall()]
     
-    busy_slots = [slot[0] for slot in busy_slots_query.all()]
-    
-    # 5. Фильтруем свободные слоты
-    free_slots = [slot for slot in all_slots if slot not in busy_slots]
-    
-    return free_slots
+    # 5. Свободные слоты
+    return [slot for slot in all_slots if slot not in busy_slots]
 
 
-def get_free_slots_formatted(db: Session, doctor_id: int, target_date: date) -> List[Dict[str, str]]:
+async def get_free_slots_formatted(
+    db: AsyncSession, 
+    doctor_id: int, 
+    target_date: date
+) -> List[Dict[str, str]]:
     """
     Находит свободные слоты и возвращает их в удобном для отображения формате.
     
     Args:
-        db: Сессия базы данных
+        db: Асинхронная сессия базы данных
         doctor_id: ID врача
         target_date: Дата для поиска слотов
     
@@ -84,30 +77,38 @@ def get_free_slots_formatted(db: Session, doctor_id: int, target_date: date) -> 
             {'time': '09:12', 'display': '09:12 - 09:24'},
         ]
     """
-    free_slots = get_free_slots(db, doctor_id, target_date)
+    # Получаем свободные слоты (уже async)
+    free_slots = await get_free_slots(db, doctor_id, target_date)
     
-    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    if not free_slots:
+        return []
+
+    # Получаем врача
+    result = await db.execute(
+        select(Doctor).where(Doctor.id == doctor_id)
+    )
+    doctor = result.scalar_one_or_none()
+    
     if not doctor:
         return []
     
-    result = []
+    result_list = []
     for slot_time in free_slots:
-        # Вычисляем время окончания приема
         start_dt = datetime.combine(target_date, slot_time)
         end_dt = start_dt + timedelta(minutes=doctor.appointment_duration_minutes)
         end_time = end_dt.time()
         
-        result.append({
+        result_list.append({
             'time': slot_time.strftime('%H:%M'),
             'display': f"{slot_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}",
             'start_time': slot_time,
             'end_time': end_time
         })
     
-    return result
+    return result_list
 
 
-def is_slot_available(db: Session, doctor_id: int, target_date: date, target_time: time) -> bool:
+def is_slot_available(db: AsyncSession, doctor_id: int, target_date: date, target_time: time) -> bool:
     """
     Проверяет, доступен ли конкретный слот для записи.
     
@@ -120,7 +121,6 @@ def is_slot_available(db: Session, doctor_id: int, target_date: date, target_tim
     Returns:
         bool: True если слот свободен, False если занят
     """
-    # Проверяем, есть ли уже запись на это время
     existing = db.query(Appointment).filter(
         Appointment.doctor_id == doctor_id,
         Appointment.appointment_date == target_date,
@@ -131,16 +131,13 @@ def is_slot_available(db: Session, doctor_id: int, target_date: date, target_tim
     if existing:
         return False
     
-    # Проверяем, что время входит в рабочие часы врача
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
     if not doctor:
         return False
     
-    # Проверяем рабочее время
     if target_time < doctor.work_start_time or target_time >= doctor.work_end_time:
         return False
     
-    # Проверяем, что время кратно длительности приема
     start_dt = datetime.combine(target_date, doctor.work_start_time)
     target_dt = datetime.combine(target_date, target_time)
     
@@ -151,22 +148,30 @@ def is_slot_available(db: Session, doctor_id: int, target_date: date, target_tim
     return True
 
 
-def get_available_doctors_for_date(db: Session, target_date: date, specialization: Optional[str] = None) -> List[Dict]:
+def get_available_doctors_for_date(
+    db: AsyncSession, 
+    target_date: date, 
+    specialization_id: Optional[int] = None
+) -> List[Dict]:
     """
-    Находит всех врачей, у которых есть свободные слоты на указанную дату.
+    Находит всех активных врачей с заданной специализацией (если указана),
+    у которых есть свободные слоты на указанную дату.
     
     Args:
         db: Сессия базы данных
         target_date: Дата для поиска
-        specialization: Опциональная специализация врача
+        specialization_id: Опциональный ID специализации
     
     Returns:
         List[Dict]: Список врачей со свободными слотами
     """
-    query = db.query(Doctor).filter(Doctor.is_active == True)
+    query = db.query(Doctor).join(Specialization, Doctor.specialization_id == Specialization.id).filter(
+        Doctor.is_active == True,
+        Specialization.is_active == True
+    )
     
-    if specialization:
-        query = query.filter(Doctor.specialization == specialization)
+    if specialization_id is not None:
+        query = query.filter(Doctor.specialization_id == specialization_id)
     
     doctors = query.all()
     
@@ -178,10 +183,10 @@ def get_available_doctors_for_date(db: Session, target_date: date, specializatio
             result.append({
                 'id': doctor.id,
                 'name': f"{doctor.last_name} {doctor.first_name} {doctor.middle_name or ''}".strip(),
-                'specialization': doctor.specialization,
+                'specialization': doctor.specialization_rel.name,  # ← имя из связанной таблицы
                 'cabinet': doctor.cabinet,
                 'free_slots_count': len(free_slots),
-                'free_slots': [slot.strftime('%H:%M') for slot in free_slots[:10]]  # Первые 10 слотов
+                'free_slots': [slot.strftime('%H:%M') for slot in free_slots[:10]]
             })
     
     return result
